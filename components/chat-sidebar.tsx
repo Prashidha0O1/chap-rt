@@ -1,4 +1,3 @@
-//chat-sidebar.tsx
 "use client"
 
 import { useState, useEffect } from "react"
@@ -11,13 +10,15 @@ import { Avatar } from "@/components/custom/avatar"
 import { cn } from "@/lib/utils"
 
 interface ChatSidebarProps {
-  chats: Chat[]
-  activeChat: Chat | null
-  onSelectChat: (chat: Chat) => void
-  searchQuery: string
-  setSearchQuery: (query: string) => void
-  isFiltered: boolean
-  setIsFiltered: (isFiltered: boolean) => void
+  chats: Chat[] // Array of chats
+  activeChat: Chat | null // Currently active chat
+  onSelectChat: (chat: Chat) => void // Function to handle selecting a chat
+  searchQuery: string // Search query for filtering chats
+  filter: string // Filter applied to chats
+  setSearchQuery: (query: string) => void // Function to update the search query
+  isFiltered: boolean // Whether the filter is active
+  setIsFiltered: (isFiltered: boolean) => void // Function to update filter status
+  setFilter: React.Dispatch<React.SetStateAction<string>>; // Function to update the filter
 }
 
 export default function ChatSidebar({
@@ -31,14 +32,14 @@ export default function ChatSidebar({
 }: ChatSidebarProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [isMobile, setIsMobile] = useState(false)
-  const [customFilter, setCustomFilter] = useState("Custom filter")
+  const [customFilter, setCustomFilter] = useState(true)
 
   // Check if screen size is mobile on mount and when window resizes
   useEffect(() => {
     const checkIfMobile = () => {
       const mobile = window.innerWidth < 768
       setIsMobile(mobile)
-      
+
       // Auto-close sidebar on mobile
       if (mobile && isSidebarOpen) {
         setIsSidebarOpen(false)
@@ -46,18 +47,27 @@ export default function ChatSidebar({
         setIsSidebarOpen(true)
       }
     }
-    
+
     // Initial check
     checkIfMobile()
-    
+
     // Add event listener for window resize
     window.addEventListener("resize", checkIfMobile)
-    
+
     // Clean up event listener on component unmount
     return () => {
       window.removeEventListener("resize", checkIfMobile)
     }
   }, [isSidebarOpen])
+
+  // Filter chats based on the customFilter
+  const filteredChats = chats.filter((chat) => {
+    if (!customFilter) return true // If no filter, show all chats
+    return (
+      chat.lastMessage?.content?.toLowerCase().includes(customFilter.toLowerCase()) ||
+      chat.name.toLowerCase().includes(customFilter.toLowerCase())
+    )
+  })
 
   return (
     <div className={cn(
@@ -100,7 +110,7 @@ export default function ChatSidebar({
                   className="h-8 text-green-600 border-green-600"
                   onClick={() => setIsFiltered(!isFiltered)}
                 >
-                  {customFilter}
+                  {customFilter ? `Filtering by: "${customFilter}"` : "Custom filter"}
                   <Check className={cn("ml-2 h-4 w-4", !isFiltered && "opacity-0")} />
                 </Button>
               </div>
@@ -114,7 +124,10 @@ export default function ChatSidebar({
                 placeholder="Search"
                 className="pl-8"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value)
+                  setCustomFilter(e.target.value) // Update custom filter as user types
+                }}
               />
               <Button
                 variant="ghost"
@@ -127,13 +140,13 @@ export default function ChatSidebar({
           </div>
 
           <div className="overflow-y-auto flex-1">
-            {chats.map((chat) => (
+            {filteredChats.map((chat) => (
               <div
                 key={chat.id}
                 className={cn("p-3 border-b hover:bg-gray-50 cursor-pointer", activeChat?.id === chat.id && "bg-gray-50")}
                 onClick={() => {
-                  onSelectChat(chat);
-                  if (isMobile) setIsSidebarOpen(false);
+                  onSelectChat(chat)
+                  if (isMobile) setIsSidebarOpen(false)
                 }}
               >
                 <div className="flex gap-3">

@@ -206,6 +206,8 @@ export default function ChatInterface() {
             setActiveChat(chat);
             if (isMobile) setIsSidebarVisible(false);
           }}
+          filter={filter}
+          setFilter={setFilter}
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
           isFiltered={isFiltered}
