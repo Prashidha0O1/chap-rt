@@ -13,7 +13,7 @@ export async function checkDB(): Promise<string> {
   return new Promise((resolve) => {
     const request = indexedDB.open("chatDB", 1)
     
-    request.onupgradeneeded = (event) => {
+    request.onupgradeneeded = () => {
       const db = request.result
       console.log("Database upgrade needed, creating object store")
       if (!db.objectStoreNames.contains("chats")) {
@@ -24,7 +24,7 @@ export async function checkDB(): Promise<string> {
       }
     }
     
-    request.onsuccess = (event) => {
+    request.onsuccess = () => {
       const db = request.result
       console.log("Successfully opened database:", db.name)
       console.log("Object stores:", Array.from(db.objectStoreNames))
@@ -52,7 +52,7 @@ export async function checkDB(): Promise<string> {
       }
     }
     
-    request.onerror = (event) => {
+    request.onerror = () => {
       console.error("Error opening database:", request.error)
       resolve(`DB open error: ${request.error instanceof Error ? request.error.message : String(request.error)}`)
     }

@@ -1,4 +1,6 @@
 "use client"
+import { supabase } from "@/lib/supabase";
+import { useRouter } from "next/navigation";
 
 import { useState, useEffect } from "react"
 import ChatSidebar from "./chat-sidebar"

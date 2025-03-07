@@ -1,5 +1,6 @@
 import React from "react";
 import { cn } from "@/lib/utils";
+import Image from 'next/image';
 
 export interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
   src?: string;
@@ -29,10 +30,11 @@ export const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
         {...props}
       >
         {src && !imageError ? (
-          <img
+          <Image
             src={src || "/diddy.PNG"}
             alt={alt}
-            className="h-full w-full object-cover"
+            layout="fill"
+            objectFit="cover"
             onError={handleImageError}
           />
         ) : (
