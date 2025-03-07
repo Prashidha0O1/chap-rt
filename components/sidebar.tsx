@@ -1,3 +1,4 @@
+//sidebar.tsx
 "use client"
 
 import { Home, MessageSquare, BarChart2, Users, Bell, Settings } from "lucide-react"

@@ -30,7 +30,7 @@ export const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
       >
         {src && !imageError ? (
           <img
-            src={src || "/placeholder.svg"}
+            src={src || "/diddy.PNG"}
             alt={alt}
             className="h-full w-full object-cover"
             onError={handleImageError}
