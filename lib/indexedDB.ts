@@ -1,4 +1,6 @@
 import type { Chat } from "@/lib/types"
+
+// Check if IndexedDB is supported and the database exists
 export async function checkDB(): Promise<string> {
   console.log("Checking for IndexedDB support...")
   if (!window.indexedDB) {
@@ -33,6 +35,7 @@ export async function checkDB(): Promise<string> {
   }
 }
 
+// Open database with robust schema initialization
 export function openDB(): Promise<IDBDatabase> {
   console.log("Opening database")
   return new Promise((resolve, reject) => {
@@ -41,50 +44,51 @@ export function openDB(): Promise<IDBDatabase> {
     request.onupgradeneeded = (event) => {
       const db = (event.target as IDBOpenDBRequest).result
       console.log("Database upgrade needed, initializing schema")
-      initializeSchema(db)
+      if (!db.objectStoreNames.contains("chats")) {
+        const chatStore = db.createObjectStore("chats", { keyPath: "id" })
+        chatStore.createIndex("name", "name", { unique: false })
+        chatStore.createIndex("timestamp", "lastMessage.timestamp", { unique: false })
+        console.log("Created 'chats' object store with indexes")
+      }
     }
 
     request.onsuccess = () => {
       const db = request.result
       if (!db.objectStoreNames.contains("chats")) {
-        console.log("Chats store missing, recreating schema")
+        // If the store is missing (e.g., due to a failed prior initialization), close and reopen with a higher version
+        console.warn("Chats store missing, forcing schema recreation")
         db.close()
-        incrementDBVersion().then(resolve).catch(reject)
-        return
+        const retryRequest = indexedDB.open("chatDB", 2)
+        
+        retryRequest.onupgradeneeded = (retryEvent) => {
+          const retryDb = (retryEvent.target as IDBOpenDBRequest).result
+          if (!retryDb.objectStoreNames.contains("chats")) {
+            const chatStore = retryDb.createObjectStore("chats", { keyPath: "id" })
+            chatStore.createIndex("name", "name", { unique: false })
+            chatStore.createIndex("timestamp", "lastMessage.timestamp", { unique: false })
+            console.log("Recreated 'chats' object store with indexes")
+          }
+        }
+
+        retryRequest.onsuccess = () => {
+          console.log("Database opened successfully after recreation")
+          resolve(retryRequest.result)
+        }
+
+        retryRequest.onerror = () => {
+          console.error("Error recreating database:", retryRequest.error)
+          reject(retryRequest.error)
+        }
+      } else {
+        console.log("Database opened successfully")
+        resolve(db)
       }
-      console.log("Database opened successfully")
-      resolve(db)
     }
 
     request.onerror = () => {
       console.error("Error opening database:", request.error)
       reject(request.error)
     }
-  })
-}
-
-// Helper to initialize schema
-function initializeSchema(db: IDBDatabase) {
-  if (!db.objectStoreNames.contains("chats")) {
-    const chatStore = db.createObjectStore("chats", { keyPath: "id" })
-    chatStore.createIndex("name", "name", { unique: false })
-    chatStore.createIndex("timestamp", "lastMessage.timestamp", { unique: false })
-    console.log("Created 'chats' object store with indexes")
-  }
-}
-
-// Helper to increment version and recreate schema
-function incrementDBVersion(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open("chatDB", 2)
-
-    request.onupgradeneeded = (event) => {
-      const db = (event.target as IDBOpenDBRequest).result
-      initializeSchema(db)
-    }
-
-    request.onsuccess = () => resolve(request.result)
-    request.onerror = () => reject(request.error)
   })
 }
 
