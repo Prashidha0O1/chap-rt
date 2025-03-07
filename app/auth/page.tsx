@@ -33,30 +33,30 @@ export default function AuthPage() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen">
       <h1 className="text-2xl font-bold mb-4">{isLogin ? "Login" : "Sign Up"}</h1>
-      <input 
-        type="email" 
-        placeholder="Email" 
-        value={email} 
-        onChange={(e) => setEmail(e.target.value)} 
+      <input
+        type="email"
+        placeholder="Email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
         className="border p-2 rounded mb-2 w-64"
       />
-      <input 
-        type="password" 
-        placeholder="Password" 
-        value={password} 
-        onChange={(e) => setPassword(e.target.value)} 
+      <input
+        type="password"
+        placeholder="Password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
         className="border p-2 rounded mb-2 w-64"
       />
-      <button 
-        onClick={handleAuth} 
-        disabled={loading} 
+      <button
+        onClick={handleAuth}
+        disabled={loading}
         className="bg-blue-500 text-white px-4 py-2 rounded"
       >
         {loading ? "Processing..." : isLogin ? "Login" : "Sign Up"}
       </button>
 
-      <button 
-        onClick={() => setIsLogin(!isLogin)} 
+      <button
+        onClick={() => setIsLogin(!isLogin)}
         className="mt-4 text-blue-500 underline"
       >
         {isLogin ? "Need an account? Sign up" : "Already have an account? Log in"}
