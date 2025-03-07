@@ -32,7 +32,7 @@ export default function ChatSidebar({
 }: ChatSidebarProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [isMobile, setIsMobile] = useState(false)
-  const [customFilter, setCustomFilter] = useState(true)
+  const [customFilter, setCustomFilter] = useState("")
 
   // Check if screen size is mobile on mount and when window resizes
   useEffect(() => {
@@ -62,10 +62,10 @@ export default function ChatSidebar({
 
   // Filter chats based on the customFilter
   const filteredChats = chats.filter((chat) => {
-    if (!customFilter) return true // If no filter, show all chats
+    if (!customFilter) return true; // If no filter, show all chats
     return (
       chat.lastMessage?.content?.toLowerCase().includes(customFilter.toLowerCase()) ||
-      chat.name.toLowerCase().includes(customFilter.toLowerCase())
+      chat.name?.toLowerCase().includes(customFilter.toLowerCase())
     )
   })
 

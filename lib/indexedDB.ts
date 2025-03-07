@@ -133,69 +133,69 @@ export async function inspectDatabase(): Promise<void> {
   })
 }
 
-// // Test IndexedDB with simple data
-// export async function testIndexedDB(): Promise<string> {
-//   console.log("Running IndexedDB test")
-//   try {
-//     const db = await openDB()
-//     const tx = db.transaction("chats", "readwrite")
-//     const store = tx.objectStore("chats")
+// Test IndexedDB with simple data
+export async function testIndexedDB(): Promise<string> {
+  console.log("Running IndexedDB test")
+  try {
+    const db = await openDB()
+    const tx = db.transaction("chats", "readwrite")
+    const store = tx.objectStore("chats")
 
-//     const testData = {
-//       id: "test-chat",
-//       name: "Test Chat",
-//       messages: [],
-//       lastMessage: null,
-//       tags: []
-//     }
+    const testData = {
+      id: "test-chat",
+      name: "Test Chat",
+      messages: [],
+      lastMessage: null,
+      tags: []
+    }
 
-//     console.log("Adding test data:", testData)
+    console.log("Adding test data:", testData)
 
-//     return new Promise((resolve, reject) => {
-//       const putRequest = store.put(testData)
+    return new Promise((resolve, reject) => {
+      const putRequest = store.put(testData)
 
-//       putRequest.onsuccess = () => {
-//         console.log("Test data saved successfully")
+      putRequest.onsuccess = () => {
+        console.log("Test data saved successfully")
 
-//         const getRequest = store.get("test-chat")
+        const getRequest = store.get("test-chat")
 
-//         getRequest.onsuccess = () => {
-//           console.log("Retrieved test data:", getRequest.result)
-//           if (getRequest.result && getRequest.result.id === "test-chat") {
-//             tx.oncomplete = () => {
-//               db.close()
-//               resolve("Test successful")
-//             }
-//           } else {
-//             tx.oncomplete = () => {
-//               db.close()
-//               resolve("Test failed: Data not retrieved correctly")
-//             }
-//           }
-//         }
+        getRequest.onsuccess = () => {
+          console.log("Retrieved test data:", getRequest.result)
+          if (getRequest.result && getRequest.result.id === "test-chat") {
+            tx.oncomplete = () => {
+              db.close()
+              resolve("Test successful")
+            }
+          } else {
+            tx.oncomplete = () => {
+              db.close()
+              resolve("Test failed: Data not retrieved correctly")
+            }
+          }
+        }
 
-//         getRequest.onerror = () => {
-//           console.error("Error retrieving test data:", getRequest.error)
-//           tx.oncomplete = () => {
-//             db.close()
-//             resolve(`Test failed: ${getRequest.error instanceof Error ? getRequest.error.message : String(getRequest.error)}`)
-//           }
-//         }
-//       }
+        getRequest.onerror = () => {
+          console.error("Error retrieving test data:", getRequest.error)
+          tx.oncomplete = () => {
+            db.close()
+            resolve(`Test failed: ${getRequest.error instanceof Error ? getRequest.error.message : String(getRequest.error)}`)
+          }
+        }
+      }
 
-//       putRequest.onerror = () => {
-//         console.error("Error saving test data:", putRequest.error)
-//         tx.oncomplete = () => {
-//           db.close()
-//           resolve(`Test failed: ${putRequest.error instanceof Error ? putRequest.error.message : String(putRequest.error)}`)
-//         }
-//       }
-//     })
-//   } catch (error) {
-//     console.error("IndexedDB test error:", error)
-//     return `Test error: ${error instanceof Error ? error.message : String(error)}`
-//   }
-// }
+      putRequest.onerror = () => {
+        console.error("Error saving test data:", putRequest.error)
+        tx.oncomplete = () => {
+          db.close()
+          resolve(`Test failed: ${putRequest.error instanceof Error ? putRequest.error.message : String(putRequest.error)}`)
+        }
+      }
+    })
+  } catch (error) {
+    console.error("IndexedDB test error:", error)
+    return `Test error: ${error instanceof Error ? error.message : String(error)}`
+  }
+}
 
 // Helper function to clear store
 async function clearStore(store: IDBObjectStore): Promise<void> {
