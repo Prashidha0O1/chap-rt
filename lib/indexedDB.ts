@@ -1,7 +1,4 @@
-// lib/indexedDB.ts
 import type { Chat } from "@/lib/types"
-
-// Check if IndexedDB is supported and the database exists
 export async function checkDB(): Promise<string> {
   console.log("Checking for IndexedDB support...")
   if (!window.indexedDB) {
@@ -10,42 +7,30 @@ export async function checkDB(): Promise<string> {
   }
 
   console.log("IndexedDB is supported")
-  return new Promise((resolve, reject) => {  // use reject here
-    const request = indexedDB.open("chatDB", 1)
+  try {
+    const db = await openDB()
+    const tx = db.transaction("chats", "readonly")
+    const store = tx.objectStore("chats")
+    const countRequest = store.count()
 
-    request.onsuccess = () => {
-      const db = request.result
-      console.log("Successfully opened database:", db.name)
-      console.log("Object stores:", Array.from(db.objectStoreNames))
-      try {
-        const tx = db.transaction("chats", "readonly")
-        const store = tx.objectStore("chats")
-        const countRequest = store.count()
-
-        countRequest.onsuccess = () => {
-          const count = countRequest.result
-          console.log(`Database contains ${count} chats`)
-          db.close()
-          resolve(`DB ready, contains ${count} chats`)
-        }
-
-        countRequest.onerror = () => {
-          console.error("Error counting chats:", countRequest.error)
-          db.close()
-          reject(new Error("Error counting chats"))
-        }
-      } catch (error) {
-        console.error("Transaction error during check:", error)
+    return new Promise((resolve, reject) => {
+      countRequest.onsuccess = () => {
+        const count = countRequest.result
+        console.log(`Database contains ${count} chats`)
         db.close()
-        reject(new Error(`DB transaction error: ${error instanceof Error ? error.message : String(error)}`))
+        resolve(`DB ready, contains ${count} chats`)
       }
-    }
 
-    request.onerror = () => {
-      console.error("Error opening database:", request.error)
-      reject(new Error(`DB open error: ${request.error instanceof Error ? request.error.message : String(request.error)}`))
-    }
-  })
+      countRequest.onerror = () => {
+        console.error("Error counting chats:", countRequest.error)
+        db.close()
+        reject(new Error("Error counting chats"))
+      }
+    })
+  } catch (error) {
+    console.error("CheckDB error:", error)
+    return `DB check failed: ${error instanceof Error ? error.message : String(error)}`
+  }
 }
 
 export function openDB(): Promise<IDBDatabase> {
@@ -55,18 +40,20 @@ export function openDB(): Promise<IDBDatabase> {
 
     request.onupgradeneeded = (event) => {
       const db = (event.target as IDBOpenDBRequest).result
-      console.log("Database upgrade needed, creating object store")
-      if (!db.objectStoreNames.contains("chats")) {
-        const chatStore = db.createObjectStore("chats", { keyPath: "id" })
-        chatStore.createIndex("name", "name", { unique: false })
-        chatStore.createIndex("timestamp", "lastMessage.timestamp", { unique: false })
-        console.log("Created 'chats' object store with indexes")
-      }
+      console.log("Database upgrade needed, initializing schema")
+      initializeSchema(db)
     }
 
     request.onsuccess = () => {
+      const db = request.result
+      if (!db.objectStoreNames.contains("chats")) {
+        console.log("Chats store missing, recreating schema")
+        db.close()
+        incrementDBVersion().then(resolve).catch(reject)
+        return
+      }
       console.log("Database opened successfully")
-      resolve(request.result)
+      resolve(db)
     }
 
     request.onerror = () => {
@@ -76,61 +63,75 @@ export function openDB(): Promise<IDBDatabase> {
   })
 }
 
+// Helper to initialize schema
+function initializeSchema(db: IDBDatabase) {
+  if (!db.objectStoreNames.contains("chats")) {
+    const chatStore = db.createObjectStore("chats", { keyPath: "id" })
+    chatStore.createIndex("name", "name", { unique: false })
+    chatStore.createIndex("timestamp", "lastMessage.timestamp", { unique: false })
+    console.log("Created 'chats' object store with indexes")
+  }
+}
+
+// Helper to increment version and recreate schema
+function incrementDBVersion(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open("chatDB", 2)
+
+    request.onupgradeneeded = (event) => {
+      const db = (event.target as IDBOpenDBRequest).result
+      initializeSchema(db)
+    }
+
+    request.onsuccess = () => resolve(request.result)
+    request.onerror = () => reject(request.error)
+  })
+}
+
 // Inspect the database contents
 export async function inspectDatabase(): Promise<void> {
   console.log("Inspecting database")
-  const request = indexedDB.open("chatDB", 1)
+  try {
+    const db = await openDB()
+    const tx = db.transaction("chats", "readonly")
+    const store = tx.objectStore("chats")
+    const countRequest = store.count()
 
-  return new Promise((resolve, reject) => {
-    request.onsuccess = () => {
-      const db = request.result
-      try {
-        const tx = db.transaction("chats", "readonly")
-        const store = tx.objectStore("chats")
-        const countRequest = store.count()
+    return new Promise((resolve, reject) => {
+      countRequest.onsuccess = () => {
+        const count = countRequest.result
+        console.log("Total chats in database:", count)
 
-        countRequest.onsuccess = () => {
-          const count = countRequest.result
-          console.log("Total chats in database:", count)
-
-          if (count > 0) {
-            const getAllRequest = store.getAll()
-            getAllRequest.onsuccess = () => {
-              console.log("All chats in database:", getAllRequest.result)
-              console.log("Chat IDs:", getAllRequest.result.map(chat => chat.id).join(", "))
-              db.close()
-              resolve()
-            }
-
-            getAllRequest.onerror = () => {
-              console.error("Error getting all chats:", getAllRequest.error)
-              db.close()
-              reject(getAllRequest.error)
-            }
-          } else {
-            console.log("No chats found in database")
+        if (count > 0) {
+          const getAllRequest = store.getAll()
+          getAllRequest.onsuccess = () => {
+            console.log("All chats:", getAllRequest.result)
+            console.log("Chat IDs:", getAllRequest.result.map(chat => chat.id).join(", "))
             db.close()
             resolve()
           }
-        }
-
-        countRequest.onerror = () => {
-          console.error("Error counting chats:", countRequest.error)
+          getAllRequest.onerror = () => {
+            console.error("Error getting chats:", getAllRequest.error)
+            db.close()
+            reject(getAllRequest.error)
+          }
+        } else {
+          console.log("No chats found")
           db.close()
-          reject(countRequest.error)
+          resolve()
         }
-      } catch (error) {
-        console.error("Transaction error during inspection:", error)
-        db.close()
-        reject(error)
       }
-    }
 
-    request.onerror = () => {
-      console.error("Error opening database for inspection:", request.error)
-      reject(request.error)
-    }
-  })
+      countRequest.onerror = () => {
+        console.error("Error counting chats:", countRequest.error)
+        db.close()
+        reject(countRequest.error)
+      }
+    })
+  } catch (error) {
+    console.error("Inspection error:", error)
+    throw error
+  }
 }
 
 // Test IndexedDB with simple data
@@ -156,7 +157,6 @@ export async function testIndexedDB(): Promise<string> {
 
       putRequest.onsuccess = () => {
         console.log("Test data saved successfully")
-
         const getRequest = store.get("test-chat")
 
         getRequest.onsuccess = () => {
@@ -217,10 +217,8 @@ export async function saveChats(chats: Chat[]): Promise<void> {
     const tx = db.transaction("chats", "readwrite")
     const store = tx.objectStore("chats")
 
-    // Clear existing chats first
     await clearStore(store)
 
-    // Add each chat with logging
     const savePromises = chats.map(chat => {
       return new Promise<void>((resolve, reject) => {
         console.log("Saving chat:", chat.id)
@@ -233,7 +231,7 @@ export async function saveChats(chats: Chat[]): Promise<void> {
 
         request.onerror = () => {
           console.error("Error saving chat:", chat.id, request.error)
-          reject(new Error(`Error saving chat: ${chat.id}`)) // reject on error
+          reject(new Error(`Error saving chat: ${chat.id}`))
         }
       })
     })
@@ -255,7 +253,7 @@ export async function saveChats(chats: Chat[]): Promise<void> {
     })
   } catch (error) {
     console.error("Error in saveChats:", error)
-    return Promise.reject(error) // reject the promise if any error occurs
+    return Promise.reject(error)
   }
 }
 
@@ -278,7 +276,7 @@ export async function getChats(): Promise<Chat[]> {
 
       request.onerror = () => {
         console.error("Error getting chats:", request.error)
-        reject(new Error(`Error retrieving chats: ${request.error}`)) // reject on error
+        reject(new Error(`Error retrieving chats: ${request.error}`))
       }
 
       tx.oncomplete = () => {
@@ -288,7 +286,7 @@ export async function getChats(): Promise<Chat[]> {
     })
   } catch (error) {
     console.error("Error in getChats:", error)
-    return Promise.reject(error) // reject the promise if any error occurs
+    return Promise.reject(error)
   }
 }
 
