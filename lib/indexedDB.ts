@@ -151,7 +151,7 @@ export async function testIndexedDB(): Promise<string> {
 
     console.log("Adding test data:", testData)
 
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       const putRequest = store.put(testData)
 
       putRequest.onsuccess = () => {
@@ -200,15 +200,11 @@ export async function testIndexedDB(): Promise<string> {
 // Helper function to clear store
 async function clearStore(store: IDBObjectStore): Promise<void> {
   console.log("Clearing object store")
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     const request = store.clear()
     request.onsuccess = () => {
       console.log("Store cleared successfully")
       resolve()
-    }
-    request.onerror = () => {
-      console.error("Error clearing store:", request.error)
-      reject(request.error)
     }
   })
 }
