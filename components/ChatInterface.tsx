@@ -1,6 +1,6 @@
 "use client"
-import { supabase } from "@/lib/supabase";
-import { useRouter } from "next/navigation";
+// import { supabase } from "@/lib/supabase";
+// import { useRouter } from "next/navigation";
 
 import { useState, useEffect } from "react"
 import ChatSidebar from "./chat-sidebar"
@@ -206,8 +206,6 @@ export default function ChatInterface() {
             setActiveChat(chat);
             if (isMobile) setIsSidebarVisible(false);
           }}
-          filter={filter}
-          setFilter={setFilter}
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
           isFiltered={isFiltered}

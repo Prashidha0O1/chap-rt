@@ -14,8 +14,6 @@ interface ChatSidebarProps {
   chats: Chat[]
   activeChat: Chat | null
   onSelectChat: (chat: Chat) => void
-  filter: string
-  setFilter: (filter: string) => void
   searchQuery: string
   setSearchQuery: (query: string) => void
   isFiltered: boolean
@@ -26,16 +24,14 @@ export default function ChatSidebar({
   chats,
   activeChat,
   onSelectChat,
-  filter,
-  setFilter,
   searchQuery,
   setSearchQuery,
   isFiltered,
   setIsFiltered,
 }: ChatSidebarProps) {
-  const [customFilter, setCustomFilter] = useState("Custom filter")
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [isMobile, setIsMobile] = useState(false)
+  const [customFilter, setCustomFilter] = useState("Custom filter")
 
   // Check if screen size is mobile on mount and when window resizes
   useEffect(() => {
